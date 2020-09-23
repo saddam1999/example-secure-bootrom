@@ -1,0 +1,1 @@
+-R .bss -R .tbss -R .tbss_space -R .stack -R .heap -R .otp.mapping -R .rela.dyn -R .internal.flash
