@@ -7,7 +7,7 @@ PROGRAM ?= example-secure-bootrom
 # Common def
 # ----------------------------------------------------------------------
 override CURRENT_DIR := $(patsubst %/,%, $(dir $(abspath $(firstword $(MAKEFILE_LIST)))))
-override BUILD_DIRECTORY = $(CURRENT_DIR)/$(CONFIGURATION)build
+override BUILD_DIRECTORY = $(abspath $(CURRENT_DIR)/$(CONFIGURATION)/build)
 override SOURCE_DIR = $(CURRENT_DIR)
 
 # ----------------------------------------------------------------------
@@ -17,7 +17,6 @@ SCL_SOURCE_PATH ?= ../../scl-metal
 SCL_DIR = $(abspath $(SCL_SOURCE_PATH))
 include $(SCL_DIR)/scripts/scl.mk
 
-TEST_FLAGS_SCL := $(foreach dir,$(SCL_INCLUDES),-I $(dir))
 override CFLAGS += $(foreach dir,$(SCL_INCLUDES),-I $(dir))
 
 override LDLIBS += -lscl
@@ -88,6 +87,26 @@ $(BUILD_DIRECTORY)/scl/lib/libscl.a:
 	libscl.a \
 	VERBOSE=$(VERBOSE)
 
+ifeq ($(TEST),TRUE)
+
+# include all objects except the one containing main()
+# INCLUDES_DIR_BOOTROM=$(INC_SBR_DIR) $(SCL_INCLUDES)
+OBJS_BOOTROM_FILTER_PATTERN = %/example-secure-bootrom.o
+OBJS_BOOTROM = $(filter-out $(OBJS_BOOTROM_FILTER_PATTERN),$(OBJS))
+LDFLAGS_BOOTROM = $(LDFLAGS)
+
+# INCLUDES_DIR_BOOTROM="$(INCLUDES_DIR_BOOTROM)"
+$(PROGRAM): \
+	$(BUILD_DIRECTORY)/scl/lib/libscl.a \
+	$(OBJS)
+	make -f Makefile -C $(CURRENT_DIR)/tests BUILD_DIRECTORY=$(BUILD_DIRECTORY) \
+	VERBOSE=$(VERBOSE) tests OBJS_BOOTROM="$(OBJS_BOOTROM)" \
+	LDFLAGS="$(LDFLAGS)" \
+	CFLAGS="$(CFLAGS)"
+	mv $(BUILD_DIRECTORY)/$(PROGRAM)-test $(CURRENT_DIR)/$(PROGRAM)
+	mv $(BUILD_DIRECTORY)/$(PROGRAM)-test.map $(CURRENT_DIR)/$(PROGRAM).map
+else
+
 $(PROGRAM): \
 	$(BUILD_DIRECTORY)/scl/lib/libscl.a \
 	$(OBJS)
@@ -96,6 +115,8 @@ $(PROGRAM): \
 	@cp $(PROGRAM) $(PROGRAM)_ori.elf
 	$(CROSS_COMPILE)-objcopy @$(CURRENT_DIR)/scripts/SectionsToRemove.mk $@ $@
 	@echo
+
+endif
 
 clean::
 	rm -rf $(BUILD_DIRECTORY)
