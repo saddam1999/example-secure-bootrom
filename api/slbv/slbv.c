@@ -44,6 +44,7 @@
 #include <api/hash/sha.h>
 #include <api/asymmetric/ecc/ecc.h>
 #include <api/asymmetric/ecc/ecdsa.h>
+#include <scl/scl_ecdsa.h>
 #include <km.h>
 #include <sbrm.h>
 #include <slbv.h>
@@ -77,7 +78,7 @@ int_pltfrm slbv_init(void *p_ctx, void *p_in, uint32_t length_in)
 		/** Then set structure parameters */
 		slbv_context.decryption = FALSE;
 		slbv_context.p_hdr = (volatile t_secure_header*)&__iflash_start;
-		slbv_context.boot_addr = (volatile uintmax_t)&__iflash_start;
+		slbv_context.boot_addr = (volatile uint_pltfrm)&__iflash_start;
 		/** Local context structure assignment */
 		p_context->p_slbv_context = (volatile void*)&slbv_context;
 		/** No error */
@@ -265,7 +266,7 @@ int_pltfrm slbv_check_slb(t_context *p_ctx, e_slbv_slb_id slb_id)
 		if( err || !slbv_context.boot_addr )
 		{
 			/** Set default value - address of free area in internal RAM/Flash */
-			slbv_context.boot_addr = (volatile uintmax_t)&__iflash_start;
+			slbv_context.boot_addr = (volatile uint_pltfrm)&__iflash_start;
 		}
 		/** Assign value then */
 		slbv_context.p_hdr = (volatile t_secure_header*)slbv_context.boot_addr;
@@ -431,7 +432,7 @@ int_pltfrm slbv_check_slb(t_context *p_ctx, e_slbv_slb_id slb_id)
 			( ( addr_copy + slbv_context.p_hdr->secure_appli_image_size - sizeof(uint32_t) ) >= addr_exec) )
 		{
 			/** Set 64bits execution address to context structure */
-			slbv_context.jump_fct_ptr = addr_exec;
+			slbv_context.jump_fct_ptr = (void*)addr_exec;
 		}
 		else
 		{
@@ -531,7 +532,7 @@ int_pltfrm slbv_check_slb(t_context *p_ctx, e_slbv_slb_id slb_id)
 			tmp_size = (volatile uint32_t)sizeof(t_secure_header) - C_SIGNATURE_MAX_SIZE;
 			err = scl_sha_core((metal_scl_t*)p_ctx->p_metal_sifive_scl,
 								(scl_sha_ctx_t*)p_ctx->p_scl_hash_ctx,
-								p_tmp,
+								(const uint8_t*)p_tmp,
 								tmp_size);
 			if( SCL_OK != err )
 			{
@@ -552,7 +553,7 @@ int_pltfrm slbv_check_slb(t_context *p_ctx, e_slbv_slb_id slb_id)
 			/** Hash binary image */
 			err = scl_sha_core((metal_scl_t*)p_ctx->p_metal_sifive_scl,
 								(scl_sha_ctx_t*)p_ctx->p_scl_hash_ctx,
-								p_tmp,
+								(const uint8_t*)p_tmp,
 								tmp_size);
 			if( SCL_OK != err )
 			{

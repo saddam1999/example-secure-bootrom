@@ -470,7 +470,7 @@ int_pltfrm sp_sup_open_communication(t_context *p_ctx);
 void sp_sup_close_communication(t_context *p_ctx);
 int_pltfrm sp_treat_copy(t_context *p_ctx, uint_pltfrm address, uint_pltfrm length, uint8_t *p_data);
 int_pltfrm sp_treat_writekey(t_context *p_ctx, e_km_keyid key_id, uint8_t *p_data, uint32_t length);
-int_pltfrm sp_treat_execute(t_context *p_ctx, uintmax_t jump_addr, uint8_t *p_arg, uint32_t length, uint8_t **p_data, uint32_t *p_length);
+int_pltfrm sp_treat_execute(t_context *p_ctx, uint_pltfrm jump_addr, uint8_t *p_arg, uint32_t length, uint8_t **p_data, uint32_t *p_length);
 int_pltfrm sp_treat_getinfo(t_context *p_ctx, uint8_t** p_data, uint32_t *p_length);
 int_pltfrm sp_sup_pkt_fields(uint8_t **p_data, uint32_t *p_size);
 int_pltfrm sp_sup_cmd_hdr(uint8_t **p_data, uint32_t *p_size);

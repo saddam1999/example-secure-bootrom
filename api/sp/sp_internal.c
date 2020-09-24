@@ -44,6 +44,7 @@
 #include <api/hash/sha.h>
 #include <api/asymmetric/ecc/ecc.h>
 #include <api/asymmetric/ecc/ecdsa.h>
+#include <scl/scl_ecdsa.h>
 #include <km.h>
 #include <sbrm_internal.h>
 #include <sbrm.h>
@@ -673,7 +674,7 @@ int_pltfrm sp_sup_check_security(t_context *p_ctx)
 				/** 'address' field must be counted */
 				err = scl_sha_core((metal_scl_t*)p_ctx->p_metal_sifive_scl,
 									(scl_sha_ctx_t*)p_ctx->p_scl_hash_ctx,
-									&sp_context.sup.rx_hdr,
+									(const uint8_t*)&sp_context.sup.rx_hdr,
 									sizeof(t_sp_sup_rx_pckt_hdr));
 			}
 			else
@@ -681,7 +682,7 @@ int_pltfrm sp_sup_check_security(t_context *p_ctx)
 				/** 'address' field must not be counted, because there's no 'address' field */
 				err = scl_sha_core((metal_scl_t*)p_ctx->p_metal_sifive_scl,
 									(scl_sha_ctx_t*)p_ctx->p_scl_hash_ctx,
-									&sp_context.sup.rx_hdr,
+									(const uint8_t*)&sp_context.sup.rx_hdr,
 									( sizeof(t_sp_sup_rx_pckt_hdr) - sizeof(sp_context.sup.rx_hdr.address) ));
 			}
 			if( SCL_OK != err )
@@ -697,7 +698,7 @@ int_pltfrm sp_sup_check_security(t_context *p_ctx)
 				/** Let's process the real payload - without 'address' field then */
 				err = scl_sha_core((metal_scl_t*)p_ctx->p_metal_sifive_scl,
 									(scl_sha_ctx_t*)p_ctx->p_scl_hash_ctx,
-									sp_context.sup.payload.p_data,
+									(const uint8_t*)sp_context.sup.payload.p_data,
 									sp_context.sup.payload.size);
 				if( SCL_OK != err )
 				{
@@ -709,7 +710,7 @@ int_pltfrm sp_sup_check_security(t_context *p_ctx)
 			/** Process security elements now - rawly , remove signature size, certificate numbers, signature number and skid */
 			err = scl_sha_core((metal_scl_t*)p_ctx->p_metal_sifive_scl,
 								(scl_sha_ctx_t*)p_ctx->p_scl_hash_ctx,
-								sp_context.security.uid,
+								(const uint8_t*)sp_context.security.uid,
 								/** Size to check starts from beginning of "Security Format" until "certs number" field not included */
 								( sizeof(sp_context.security.uid) + sizeof(sp_context.security.nb_signatures) ));
 			if( SCL_OK != err )
@@ -721,7 +722,7 @@ int_pltfrm sp_sup_check_security(t_context *p_ctx)
 			/** Process moving part if multiple signatures */
 			err = scl_sha_core((metal_scl_t*)p_ctx->p_metal_sifive_scl,
 								(scl_sha_ctx_t*)p_ctx->p_scl_hash_ctx,
-								p_signature_element,
+								(const uint8_t*)p_signature_element,
 								/** Size to check starts from beginning of "Security Format" until "certs number" field not included */
 								( sizeof(p_signature_element->sig_nb) + sizeof(p_signature_element->skid) + sizeof(p_signature_element->algo) ));
 			if( SCL_OK != err )
@@ -1209,7 +1210,7 @@ sp_treat_writekey_out:
 }
 
 /******************************************************************************/
-int_pltfrm sp_treat_execute(t_context *p_ctx, uintmax_t jump_addr, uint8_t *p_arg, uint32_t length, uint8_t **p_data, uint32_t *p_length)
+int_pltfrm sp_treat_execute(t_context *p_ctx, uint_pltfrm jump_addr, uint8_t *p_arg, uint32_t length, uint8_t **p_data, uint32_t *p_length)
 {
 	int_pltfrm 									err = GENERIC_ERR_UNKNOWN;
 	uint_pltfrm (*applet_fct_ptr)(uint8_t* p_arg, uint32_t length, uint8_t **p_ret_data, uint32_t *p_ret_size);
@@ -1226,15 +1227,15 @@ int_pltfrm sp_treat_execute(t_context *p_ctx, uintmax_t jump_addr, uint8_t *p_ar
 		uint32_t								arg1 = length;
 
 		/** Check jump address */
-		if( (  (uintmax_t)p_ctx->free_ram_end < jump_addr ) ||
-			( (uintmax_t)p_ctx->free_ram_start > jump_addr ) )
+		if( (  (uint_pltfrm)p_ctx->free_ram_end < jump_addr ) ||
+			( (uint_pltfrm)p_ctx->free_ram_start > jump_addr ) )
 		{
 			/**  */
 			err = N_SP_ERR_SUP_JUMP_ADDR_FAILURE;
 			goto sp_treat_execute_out;
 		}
 		/** Assign function pointer */
-		applet_fct_ptr = jump_addr;
+		applet_fct_ptr = (uint_pltfrm*)jump_addr;
 		/** Call function */
 		err = applet_fct_ptr(p_arg, length, p_data, p_length);
 

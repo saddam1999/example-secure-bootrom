@@ -45,6 +45,7 @@
 #include <api/asymmetric/ecc/ecc.h>
 #include <api/asymmetric/ecc/ecdsa.h>
 #include <scl/scl_init.h>
+#include <scl/scl_ecdsa.h>
 #include <sbrm.h>
 /** Local includes */
 #include <km.h>
@@ -514,7 +515,7 @@ int_pltfrm km_verify_signature(t_context *p_ctx,
 												(const ecc_affine_const_point_t *const)&Q,
 												(const ecdsa_signature_const_t *const)&signature,
 												p_ctx->digest,
-												&hash_len);
+												hash_len);
 		}
 	}
 	/** If one of the returned value is not Ok then error */
