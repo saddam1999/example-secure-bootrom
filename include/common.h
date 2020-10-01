@@ -153,20 +153,14 @@
 
 #define	C_CRC32_SIZE							0x20
 
-//#define	C_PATTERN_VIRGIN_8BITS					((int8_t)-1)
-//#define	C_PATTERN_VIRGIN_16BITS					((int16_t)-1)
-//#define	C_PATTERN_VIRGIN_32BITS					((int32_t)-1)
-//#define	C_PATTERN_VIRGIN_64BITS					((int64_t)-1)
-//#define	C_PATTERN_VIRGIN_MAXBITS				((intmax_t)-1)
-
 #define	C_PATTERN_VIRGIN_8BITS					0xffU
 #define	C_PATTERN_VIRGIN_16BITS					0xffffU
 #define	C_PATTERN_VIRGIN_32BITS					0xffffffffUL
 #define	C_PATTERN_VIRGIN_64BITS					0xffffffffffffffffULL
-#if __riscv_xlen == 32
+#if (__riscv_xlen == 32)
 /** 32bits */
 #define	C_PATTERN_VIRGIN_MAXBITS				0xffffffffULL
-#elif __riscv_xlen == 64
+#elif (__riscv_xlen == 64)
 /** 64bits */
 #define	C_PATTERN_VIRGIN_MAXBITS				0xffffffffffffffffULL
 #else
@@ -197,9 +191,7 @@
 #define	C_MISA_EXTENSION_BIT_USER_MODE_OFST		20
 #define	C_MISA_EXTENSION_BIT_NO_STD_EXT_OFST	23
 
-
 /******************************************************************************/
-
 #define	C_SIGNATURE_MAX_SIZE					( 2 * C_EDCSA384_SIZE )
 #define	C_SIGNATURE_MAX_SIZE_INT				( C_SIGNATURE_MAX_SIZE / sizeof(uint32_t) )
 

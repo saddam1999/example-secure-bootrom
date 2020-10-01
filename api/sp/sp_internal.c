@@ -203,7 +203,7 @@ int_pltfrm sp_uart_receive_buffer(t_context *p_ctx, uint8_t *p_data, uint32_t *p
 		/** Enable RX */
 		M_UART_RX_ENABLE(sp_context.port.uart.reg_uart);
 		/** Enable interrupt */
-		M_UART_UNMASK_RX_IRQ(sp_context.port.uart.reg_uart);
+		metal_uart_receive_interrupt_enable(sp_context.port.uart.uart0);
 	    /** Wait until reception is over */
 	    while( sp_context.rx_communication.lasting > 0 )
 	    {
