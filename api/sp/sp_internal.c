@@ -63,7 +63,7 @@ __attribute__((section(".bss"))) uint8_t work_buf[M_WHOIS_MAX(C_KM_KEY_BUFFER_MA
 
 
 /** UART **********************************************************************/
-void sp_uart_isr(int32_t id, void *data)
+__attribute__((optimize("O0"))) void sp_uart_isr(int32_t id, void *data)
 {
 	uint32_t									isr = sp_context.port.uart.reg_uart->ip & sp_context.port.uart.reg_uart->ie;
 
@@ -83,7 +83,7 @@ void sp_uart_isr(int32_t id, void *data)
 	return;
 }
 /******************************************************************************/
-void sp_uart_rx_isr(int32_t id, void *data)
+__attribute__((optimize("O0"))) void sp_uart_rx_isr(int32_t id, void *data)
 {
 	register uint32_t									tmp_rx;
 
@@ -130,7 +130,7 @@ void sp_uart_rx_isr(int32_t id, void *data)
 }
 
 /******************************************************************************/
-void sp_uart_tx_isr(int32_t id, void *data)
+__attribute__((optimize("O0"))) void sp_uart_tx_isr(int32_t id, void *data)
 {
 	/** Mask interruption */
 	M_UART_MASK_TX_IRQ(sp_context.port.uart.reg_uart);
