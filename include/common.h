@@ -37,12 +37,10 @@
 #include <stdio.h>
 #include <stddef.h>
 #include <stdint.h>
-#ifndef _WITH_FREEDOM_METAL_
-#else
 #include <metal/memory.h>
 #include <metal/cpu.h>
 #include <metal/uart.h>
-#endif /* _WITH_FREEDOM_METAL_ */
+#include <metal/led.h>
 /** Other includes */
 #include <api/scl_api.h>
 #include <api/hardware/scl_hca.h>
@@ -203,6 +201,23 @@
 
 #define	C_CRYPTO_LIB_BUFFER_SIZE				( 8 * C_GENERIC_KILO )
 #define	C_CRYPTO_LIB_BUFFER_SIZE_INT			( C_CRYPTO_LIB_BUFFER_SIZE / sizeof(uint32_t) )
+
+#ifdef _WITH_GPIO_CHARAC_
+/******************************************************************************/
+#define	C_GPIO0_OFFSET							8
+#define	C_GPIO0_NB								8
+
+
+#define	C_GPIO0_SHA								( C_GPIO0_OFFSET + 5 )
+#define	C_GPIO0_SHA_ECDSA						( C_GPIO0_OFFSET + 6 )
+#define	C_GPIO0_DIRECT_ECDSA					( C_GPIO0_OFFSET + 7 )
+
+#define	C_GPIO0_HEADER_CHECK					( C_GPIO0_OFFSET + 12 )
+#define	C_GPIO0_JUMP							( C_GPIO0_OFFSET + 13 )
+#define	C_GPIO0_SBR_END							( C_GPIO0_OFFSET + 14 )
+
+
+#endif /* _WITH_GPIO_CHARAC_ */
 
 /** Enumerations **************************************************************/
 
@@ -409,6 +424,12 @@ typedef struct
 #else
 	metal_memory								otp;
 #endif /* _FPA_SPECIFIC_ */
+#ifdef _WITH_GPIO_CHARAC_
+	/** For GPIO toggling for GPIO0:16-GPIO0:31 */
+	struct metal_gpio							*gpio0;
+	/** For LEDs switching */
+	struct metal_led							*led[3];
+#endif /* _WITH_GPIO_CHARAC_ */
 	/** Pointers on modules' context structures */
 	/** Key Management */
 	volatile void								*p_km_context;

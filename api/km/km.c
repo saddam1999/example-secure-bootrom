@@ -107,9 +107,22 @@ int_pltfrm km_init(void *p_ctx, void *p_in, uint32_t length_in)
 			}
 			/** Then initialize hash context */
 			/** Initialize cryptographic library context for hash computation */
+#ifdef _WITH_GPIO_CHARAC_
+			/** Red LED Off/On */
+			metal_led_off(p_context->led[0]);
+			metal_led_on(p_context->led[0]);
+			/** Set GPIO SHA high */
+			metal_gpio_set_pin(p_context->gpio0, C_GPIO0_SHA, 1);
+#endif /* _WITH_GPIO_CHARAC_ */
 			err = scl_sha_init((metal_scl_t*)p_context->p_metal_sifive_scl,
 								(scl_sha_ctx_t*)p_context->p_scl_hash_ctx,
 								SCL_HASH_SHA384);
+#ifdef _WITH_GPIO_CHARAC_
+			/** Set GPIO SHA high */
+			metal_gpio_set_pin(p_context->gpio0, C_GPIO0_SHA, 0);
+			/** Red LED Off */
+			metal_led_off(p_context->led[0]);
+#endif /* _WITH_GPIO_CHARAC_ */
 			if ( SCL_OK != err )
 			{
 				/** Error in cryptographic initialization */
@@ -498,24 +511,45 @@ int_pltfrm km_verify_signature(t_context *p_ctx,
 			memset((void*)p_ctx->digest, 0x00, sizeof(p_ctx->digest));
 			/** First compute hash */
 			hash_len = sizeof(p_ctx->digest);
+#ifdef _WITH_GPIO_CHARAC_
+			/** Red LED Off/On */
+			metal_led_off(p_ctx->led[0]);
+			metal_led_on(p_ctx->led[0]);
+			/** Set GPIO SHA high */
+			metal_gpio_set_pin(p_ctx->gpio0, C_GPIO0_SHA, 1);
+#endif /* _WITH_GPIO_CHARAC_ */
 			err[loop] = scl_sha((metal_scl_t*)p_ctx->p_metal_sifive_scl,
 								SCL_HASH_SHA384,
 								p_message,
 								mess_length,
 								p_ctx->digest,
 								&hash_len);
+#ifdef _WITH_GPIO_CHARAC_
+			/** Set GPIO SHA low */
+			metal_gpio_set_pin(p_ctx->gpio0, C_GPIO0_SHA, 0);
+#endif /* _WITH_GPIO_CHARAC_ */
 			/** Set parameters */
 			Q.x = key.ecdsa.p_x;
 			Q.y = key.ecdsa.p_y;
 			signature.r = p_signature;
 			signature.s = p_signature + C_EDCSA384_SIZE;
 			hash_len = sizeof(p_ctx->digest);
+#ifdef _WITH_GPIO_CHARAC_
+			/** Set GPIO check ECDSA high */
+			metal_gpio_set_pin(p_ctx->gpio0, C_GPIO0_SHA_ECDSA, 1);
+#endif /* _WITH_GPIO_CHARAC_ */
 			err[loop] = scl_ecdsa_verification((metal_scl_t*)p_ctx->p_metal_sifive_scl,
 												&ecc_secp384r1,
 												(const ecc_affine_const_point_t *const)&Q,
 												(const ecdsa_signature_const_t *const)&signature,
 												p_ctx->digest,
 												hash_len);
+#ifdef _WITH_GPIO_CHARAC_
+			/** Set GPIO check ECDSA low */
+			metal_gpio_set_pin(p_ctx->gpio0, C_GPIO0_SHA_ECDSA, 0);
+			/** Red LED Off */
+			metal_led_off(p_ctx->led[0]);
+#endif /* _WITH_GPIO_CHARAC_ */
 		}
 	}
 	/** If one of the returned value is not Ok then error */
@@ -562,12 +596,25 @@ int_pltfrm km_verify_hash(t_context *p_ctx,
 		{
 			/** Call to SiFive Cryptographic Library */
 			hash_len = sizeof(hash);
+#ifdef _WITH_GPIO_CHARAC_
+			/** Red LED Off/On */
+			metal_led_off(p_ctx->led[0]);
+			metal_led_on(p_ctx->led[0]);
+			/** Set GPIO SHA high */
+			metal_gpio_set_pin(p_ctx->gpio0, C_GPIO0_SHA, 1);
+#endif /* _WITH_GPIO_CHARAC_ */
 			err[loop] = scl_sha((metal_scl_t*)p_ctx->p_metal_sifive_scl,
 								SCL_HASH_SHA384,
 								p_message,
 								mess_length,
 								hash,
 								&hash_len);
+#ifdef _WITH_GPIO_CHARAC_
+			/** Set GPIO SHA low */
+			metal_gpio_set_pin(p_ctx->gpio0, C_GPIO0_SHA, 0);
+			/** Red LED Off */
+			metal_led_off(p_ctx->led[0]);
+#endif /* _WITH_GPIO_CHARAC_ */
 			/** If one of the returned value is not Ok then error */
 			if ( SCL_OK != err[loop] )
 			{

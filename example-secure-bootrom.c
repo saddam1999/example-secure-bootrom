@@ -37,9 +37,14 @@
 #include <common.h>
 #include <errors.h>
 #include <patch.h>
+#include <metal/led.h>
 /** Other includes */
 #include <api/scl_api.h>
+#if defined(HCA_HAS_SHA)
 #include <api/hardware/scl_hca.h>
+#else
+#include <api/software/scl_soft.h>
+#endif /* HCA_HAS_SHA */
 #include <api/software/bignumbers/soft_bignumbers.h>
 #include <api/software/asymmetric/ecc/soft_ecc.h>
 #include <api/software/asymmetric/ecc/soft_ecdsa.h>
@@ -71,7 +76,7 @@ metal_scl_t metal_sifive_scl = {
         .auth_core = default_aes_auth_core,
         .auth_finish = default_aes_auth_finish
     },
-# if defined(HCA_HAS_SHA)
+#if defined(HCA_HAS_SHA)
     .hash_func = {
         .sha_init = hca_sha_init,
         .sha_core = hca_sha_core,
@@ -177,6 +182,9 @@ metal_scl_t metal_sifive_scl = {
 int_pltfrm context_initialization(t_context *p_ctx)
 {
 	int_pltfrm 									err = GENERIC_ERR_UNKNOWN;
+#ifdef _WITH_GPIO_CHARAC_
+	uint8_t										i;
+#endif /* _WITH_GPIO_CHARAC_ */
 
 	/** Check input pointer */
 	if( !p_ctx )
@@ -194,7 +202,46 @@ int_pltfrm context_initialization(t_context *p_ctx)
 		p_ctx->p_scl_hash_ctx = (volatile scl_sha_ctx_t*)&hash_ctx;
 		/** No error */
 		err = NO_ERROR;
+#ifdef _WITH_GPIO_CHARAC_
+		/** Register GPIO0 */
+		p_ctx->gpio0 = (struct metal_gpio *)&__metal_dt_gpio_20002000;
+		/** Configure pin as output */
+		for(i = C_GPIO0_OFFSET;i < ( C_GPIO0_OFFSET + C_GPIO0_NB );i++ )
+		{
+			metal_gpio_disable_input(p_ctx->gpio0, i);
+			metal_gpio_enable_output(p_ctx->gpio0, i);
+		}
+//		/** Set GPIO high */
+//		metal_gpio_set_pin(p_ctx->gpio0, pin, 1);
+//		/** Set GPIO low */
+//		metal_gpio_set_pin(p_ctx->gpio0, pin, 0);
+
+		/** Retrieve LEDs RGB */
+		/** Red */
+	    p_ctx->led[0] = metal_led_get_rgb("LD0", "red");
+	    /** Green */
+	    p_ctx->led[1] = metal_led_get_rgb("LD0", "green");
+	    /** Blue */
+	    p_ctx->led[2] = metal_led_get_rgb("LD0", "blue");
+	    /** Check result */
+	    if( !p_ctx->led[0] || !p_ctx->led[1] || !p_ctx->led[2] )
+	    {
+	        err = GENERIC_ERR_NULL_PTR;
+	        goto context_initialization_out;
+	    }
+	    /** Enable each LED */
+	    metal_led_enable(p_ctx->led[0]);
+	    metal_led_enable(p_ctx->led[1]);
+	    metal_led_enable(p_ctx->led[2]);
+	    /** All Off */
+	    metal_led_off(p_ctx->led[0]);
+	    metal_led_off(p_ctx->led[1]);
+	    metal_led_off(p_ctx->led[2]);
+#endif /*  */
 	}
+#ifdef _WITH_GPIO_CHARAC_
+context_initialization_out:
+#endif /* _WITH_GPIO_CHARAC_ */
 	/** End Of Function */
 	return err;
 }

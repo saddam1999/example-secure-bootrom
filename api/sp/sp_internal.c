@@ -40,7 +40,12 @@
 #include <metal/gpio.h>
 /** Other includes */
 #include <api/scl_api.h>
+#if defined(HCA_HAS_SHA)
 #include <api/hardware/scl_hca.h>
+#else
+#include <api/software/scl_soft.h>
+#endif /* HCA_HAS_SHA */
+
 #include <api/hash/sha.h>
 #include <api/asymmetric/ecc/ecc.h>
 #include <api/asymmetric/ecc/ecdsa.h>
@@ -63,7 +68,7 @@ __attribute__((section(".bss"))) uint8_t work_buf[M_WHOIS_MAX(C_KM_KEY_BUFFER_MA
 
 
 /** UART **********************************************************************/
-__attribute__((optimize("O0"))) void sp_uart_isr(int32_t id, void *data)
+void sp_uart_isr(int32_t id, void *data)
 {
 	uint32_t									isr = sp_context.port.uart.reg_uart->ip & sp_context.port.uart.reg_uart->ie;
 
@@ -83,7 +88,7 @@ __attribute__((optimize("O0"))) void sp_uart_isr(int32_t id, void *data)
 	return;
 }
 /******************************************************************************/
-__attribute__((optimize("O0"))) void sp_uart_rx_isr(int32_t id, void *data)
+void sp_uart_rx_isr(int32_t id, void *data)
 {
 	register uint32_t									tmp_rx;
 
@@ -130,7 +135,7 @@ __attribute__((optimize("O0"))) void sp_uart_rx_isr(int32_t id, void *data)
 }
 
 /******************************************************************************/
-__attribute__((optimize("O0"))) void sp_uart_tx_isr(int32_t id, void *data)
+void sp_uart_tx_isr(int32_t id, void *data)
 {
 	/** Mask interruption */
 	M_UART_MASK_TX_IRQ(sp_context.port.uart.reg_uart);
@@ -659,9 +664,20 @@ int_pltfrm sp_sup_check_security(t_context *p_ctx)
 			/** Now check 'end' certificate */
 			/** Process hash digest on message */
 			/** Initialization */
+#ifdef _WITH_GPIO_CHARAC_
+			/** Blue LED Off/On */
+			metal_led_off(p_ctx->led[2]);
+			metal_led_on(p_ctx->led[2]);
+			/** Set GPIO SHA high */
+			metal_gpio_set_pin(p_ctx->gpio0, C_GPIO0_SHA, 1);
+#endif /* _WITH_GPIO_CHARAC_ */
 			err = scl_sha_init((metal_scl_t*)p_ctx->p_metal_sifive_scl,
 								(scl_sha_ctx_t*)p_ctx->p_scl_hash_ctx,
 								SCL_HASH_SHA384);
+#ifdef _WITH_GPIO_CHARAC_
+			/** Set GPIO SHA low */
+			metal_gpio_set_pin(p_ctx->gpio0, C_GPIO0_SHA, 0);
+#endif /* _WITH_GPIO_CHARAC_ */
 			if( SCL_OK != err )
 			{
 				/** Critical error */
@@ -672,18 +688,34 @@ int_pltfrm sp_sup_check_security(t_context *p_ctx)
 			if( sp_context.sup.rx_hdr.command_length )
 			{
 				/** 'address' field must be counted */
+#ifdef _WITH_GPIO_CHARAC_
+			/** Set GPIO SHA high */
+			metal_gpio_set_pin(p_ctx->gpio0, C_GPIO0_SHA, 1);
+#endif /* _WITH_GPIO_CHARAC_ */
 				err = scl_sha_core((metal_scl_t*)p_ctx->p_metal_sifive_scl,
 									(scl_sha_ctx_t*)p_ctx->p_scl_hash_ctx,
 									(const uint8_t*)&sp_context.sup.rx_hdr,
 									sizeof(t_sp_sup_rx_pckt_hdr));
+#ifdef _WITH_GPIO_CHARAC_
+			/** Set GPIO SHA low */
+			metal_gpio_set_pin(p_ctx->gpio0, C_GPIO0_SHA, 0);
+#endif /* _WITH_GPIO_CHARAC_ */
 			}
 			else
 			{
 				/** 'address' field must not be counted, because there's no 'address' field */
+#ifdef _WITH_GPIO_CHARAC_
+				/** Set GPIO SHA high */
+				metal_gpio_set_pin(p_ctx->gpio0, C_GPIO0_SHA, 1);
+#endif /* _WITH_GPIO_CHARAC_ */
 				err = scl_sha_core((metal_scl_t*)p_ctx->p_metal_sifive_scl,
 									(scl_sha_ctx_t*)p_ctx->p_scl_hash_ctx,
 									(const uint8_t*)&sp_context.sup.rx_hdr,
 									( sizeof(t_sp_sup_rx_pckt_hdr) - sizeof(sp_context.sup.rx_hdr.address) ));
+#ifdef _WITH_GPIO_CHARAC_
+				/** Set GPIO SHA low */
+				metal_gpio_set_pin(p_ctx->gpio0, C_GPIO0_SHA, 0);
+#endif /* _WITH_GPIO_CHARAC_ */
 			}
 			if( SCL_OK != err )
 			{
@@ -696,10 +728,18 @@ int_pltfrm sp_sup_check_security(t_context *p_ctx)
 			if( sp_context.sup.rx_hdr.command_length )
 			{
 				/** Let's process the real payload - without 'address' field then */
+#ifdef _WITH_GPIO_CHARAC_
+			/** Set GPIO SHA high */
+			metal_gpio_set_pin(p_ctx->gpio0, C_GPIO0_SHA, 1);
+#endif /* _WITH_GPIO_CHARAC_ */
 				err = scl_sha_core((metal_scl_t*)p_ctx->p_metal_sifive_scl,
 									(scl_sha_ctx_t*)p_ctx->p_scl_hash_ctx,
 									(const uint8_t*)sp_context.sup.payload.p_data,
 									sp_context.sup.payload.size);
+#ifdef _WITH_GPIO_CHARAC_
+			/** Set GPIO SHA low */
+			metal_gpio_set_pin(p_ctx->gpio0, C_GPIO0_SHA, 0);
+#endif /* _WITH_GPIO_CHARAC_ */
 				if( SCL_OK != err )
 				{
 					/** Critical error */
@@ -708,11 +748,19 @@ int_pltfrm sp_sup_check_security(t_context *p_ctx)
 				}
 			}
 			/** Process security elements now - rawly , remove signature size, certificate numbers, signature number and skid */
+#ifdef _WITH_GPIO_CHARAC_
+			/** Set GPIO SHA high */
+			metal_gpio_set_pin(p_ctx->gpio0, C_GPIO0_SHA, 1);
+#endif /* _WITH_GPIO_CHARAC_ */
 			err = scl_sha_core((metal_scl_t*)p_ctx->p_metal_sifive_scl,
 								(scl_sha_ctx_t*)p_ctx->p_scl_hash_ctx,
 								(const uint8_t*)sp_context.security.uid,
 								/** Size to check starts from beginning of "Security Format" until "certs number" field not included */
 								( sizeof(sp_context.security.uid) + sizeof(sp_context.security.nb_signatures) ));
+#ifdef _WITH_GPIO_CHARAC_
+			/** Set GPIO SHA low */
+			metal_gpio_set_pin(p_ctx->gpio0, C_GPIO0_SHA, 0);
+#endif /* _WITH_GPIO_CHARAC_ */
 			if( SCL_OK != err )
 			{
 				/** Critical error */
@@ -720,11 +768,19 @@ int_pltfrm sp_sup_check_security(t_context *p_ctx)
 				goto sp_sup_check_security_out;
 			}
 			/** Process moving part if multiple signatures */
+#ifdef _WITH_GPIO_CHARAC_
+			/** Set GPIO SHA high */
+			metal_gpio_set_pin(p_ctx->gpio0, C_GPIO0_SHA, 1);
+#endif /* _WITH_GPIO_CHARAC_ */
 			err = scl_sha_core((metal_scl_t*)p_ctx->p_metal_sifive_scl,
 								(scl_sha_ctx_t*)p_ctx->p_scl_hash_ctx,
 								(const uint8_t*)p_signature_element,
 								/** Size to check starts from beginning of "Security Format" until "certs number" field not included */
 								( sizeof(p_signature_element->sig_nb) + sizeof(p_signature_element->skid) + sizeof(p_signature_element->algo) ));
+#ifdef _WITH_GPIO_CHARAC_
+			/** Set GPIO SHA low */
+			metal_gpio_set_pin(p_ctx->gpio0, C_GPIO0_SHA, 0);
+#endif /* _WITH_GPIO_CHARAC_ */
 			if( SCL_OK != err )
 			{
 				/** Critical error */
@@ -735,10 +791,18 @@ int_pltfrm sp_sup_check_security(t_context *p_ctx)
 			/** Then finish computation */
 			hash_len = sizeof(p_ctx->digest);
 			memset((void*)p_ctx->digest, 0x00, C_SP_SUP_HASH_SIZE_IN_BYTES);
+#ifdef _WITH_GPIO_CHARAC_
+			/** Set GPIO SHA high */
+			metal_gpio_set_pin(p_ctx->gpio0, C_GPIO0_SHA, 1);
+#endif /* _WITH_GPIO_CHARAC_ */
 			err = scl_sha_finish((metal_scl_t*)p_ctx->p_metal_sifive_scl,
 									(scl_sha_ctx_t*)p_ctx->p_scl_hash_ctx,
 									p_ctx->digest,
 									&hash_len);
+#ifdef _WITH_GPIO_CHARAC_
+			/** Set GPIO SHA low */
+			metal_gpio_set_pin(p_ctx->gpio0, C_GPIO0_SHA, 0);
+#endif /* _WITH_GPIO_CHARAC_ */
 			if( SCL_OK != err )
 			{
 				/** Critical error */
@@ -759,12 +823,22 @@ int_pltfrm sp_sup_check_security(t_context *p_ctx)
 			signature.r = p_end_certificate;
 			signature.s = p_end_certificate + C_EDCSA384_SIZE;
 			/** Call SCL ECDSA verification function */
+#ifdef _WITH_GPIO_CHARAC_
+			/** Set GPIO check ECDSA high */
+			metal_gpio_set_pin(p_ctx->gpio0, C_GPIO0_SHA_ECDSA, 1);
+#endif /* _WITH_GPIO_CHARAC_ */
 			err = scl_ecdsa_verification((metal_scl_t*)p_ctx->p_metal_sifive_scl,
 											&ecc_secp384r1,
 											(const ecc_affine_const_point_t *const)&Q,
 											(const ecdsa_signature_const_t *const)&signature,
 											p_ctx->digest,
 											C_SP_SUP_HASH_SIZE_IN_BYTES);
+#ifdef _WITH_GPIO_CHARAC_
+			/** Set GPIO check ECDSA low */
+			metal_gpio_set_pin(p_ctx->gpio0, C_GPIO0_SHA_ECDSA, 0);
+			/** Blue LED Off */
+			metal_led_off(p_ctx->led[2]);
+#endif /* _WITH_GPIO_CHARAC_ */
 			if( SCL_OK != err )
 			{
 				/** Cryptographic computation failed */
@@ -1181,12 +1255,25 @@ int_pltfrm sp_treat_writekey(t_context *p_ctx, e_km_keyid key_id, uint8_t *p_dat
 			case N_KM_KEYID_CSK:
 				/** Compute hash, and put it in 'certificate' location */
 				hash_len = sizeof(p_key_data->certificate);
+#ifdef _WITH_GPIO_CHARAC_
+			/** Blue LED Off/On */
+			metal_led_off(p_ctx->led[2]);
+			metal_led_on(p_ctx->led[2]);
+			/** Set GPIO SHA high */
+			metal_gpio_set_pin(p_ctx->gpio0, C_GPIO0_SHA, 1);
+#endif /* _WITH_GPIO_CHARAC_ */
 				err = scl_sha((metal_scl_t*)p_ctx->p_metal_sifive_scl,
 								SCL_HASH_SHA384,
 								(const uint8_t *const)p_key_data,
 								(size_t)( sizeof(t_key_data) - sizeof(p_key_data->certificate) ),
 								(uint8_t *const)p_key_data->certificate,
 								&hash_len);
+#ifdef _WITH_GPIO_CHARAC_
+			/** Set GPIO SHA low */
+			metal_gpio_set_pin(p_ctx->gpio0, C_GPIO0_SHA, 0);
+			/** Blue LED Off */
+			metal_led_off(p_ctx->led[2]);
+#endif /* _WITH_GPIO_CHARAC_ */
 				if( SCL_OK != err )
 				{
 					/** Critical error */

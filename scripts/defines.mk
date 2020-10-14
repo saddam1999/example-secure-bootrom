@@ -7,6 +7,7 @@ include $(CURRENT_DIR)/scripts/version.mk
 ## List of constants to be activated/defined
 ## C code
 __CLIST_DEFINITIONS = -D_FPGA_SPECIFIC_ \
+						-D_WITH_GPIO_CHARAC_ \
 						-D_WITH_TEST_PSK_ \
 						-D_WITH_TEST_CUK_ \
 						-D_WITH_TEST_CSK_ \
