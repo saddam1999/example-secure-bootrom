@@ -48,6 +48,9 @@
 /** SP errors base */
 #define C_SP_BASE_ERROR        					( N_PREFIX_SP << C_PREFIX_OFFSET )
 
+/** UART0 is the default UART ID */
+#define	C_SP_SUP_BUS_UART_ID					0
+
 /** Enumerations **************************************************************/
 /** SP errors list */
 typedef enum

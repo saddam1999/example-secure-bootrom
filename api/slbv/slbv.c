@@ -512,14 +512,25 @@ int_pltfrm slbv_check_slb(t_context *p_ctx, e_slbv_slb_id slb_id)
 			if( err )
 			{
 				/** Valid CSK not available/found */
-				err = N_SLBV_ERR_NO_CSK_AVIALABLE;
+				err = N_SLBV_ERR_NO_CSK_AVAILABLE;
 				goto slbv_check_slb_out;
 			}
 			/**  */
 			/** Initialization of hash buffer */
+#ifdef _WITH_GPIO_CHARAC_
+			/** Green LED Off/On */
+			metal_led_off(p_ctx->led[1]);
+			metal_led_on(p_ctx->led[1]);
+			/** Set GPIO SHA high */
+			metal_gpio_set_pin(p_ctx->gpio0, C_GPIO0_SHA, 1);
+#endif /* _WITH_GPIO_CHARAC_ */
 			err = scl_sha_init((metal_scl_t*)p_ctx->p_metal_sifive_scl,
 								(scl_sha_ctx_t*)p_ctx->p_scl_hash_ctx,
 								SCL_HASH_SHA384);
+#ifdef _WITH_GPIO_CHARAC_
+			/** Set GPIO SHA low */
+			metal_gpio_set_pin(p_ctx->gpio0, C_GPIO0_SHA, 0);
+#endif /* _WITH_GPIO_CHARAC_ */
 			if( SCL_OK != err )
 			{
 				/** Critical error */
@@ -530,10 +541,18 @@ int_pltfrm slbv_check_slb(t_context *p_ctx, e_slbv_slb_id slb_id)
 			p_tmp = (volatile uint8_t*)slbv_context.p_hdr;
 			/** Remove signature from structure size */
 			tmp_size = (volatile uint32_t)sizeof(t_secure_header) - C_SIGNATURE_MAX_SIZE;
+#ifdef _WITH_GPIO_CHARAC_
+			/** Set GPIO SHA high */
+			metal_gpio_set_pin(p_ctx->gpio0, C_GPIO0_SHA, 1);
+#endif /* _WITH_GPIO_CHARAC_ */
 			err = scl_sha_core((metal_scl_t*)p_ctx->p_metal_sifive_scl,
 								(scl_sha_ctx_t*)p_ctx->p_scl_hash_ctx,
 								(const uint8_t*)p_tmp,
 								tmp_size);
+#ifdef _WITH_GPIO_CHARAC_
+			/** Set GPIO SHA low */
+			metal_gpio_set_pin(p_ctx->gpio0, C_GPIO0_SHA, 0);
+#endif /* _WITH_GPIO_CHARAC_ */
 			if( SCL_OK != err )
 			{
 				/** Should not happen */
@@ -551,10 +570,18 @@ int_pltfrm slbv_check_slb(t_context *p_ctx, e_slbv_slb_id slb_id)
 				tmp_size -= C_SIGNATURE_MAX_SIZE;
 			}
 			/** Hash binary image */
+#ifdef _WITH_GPIO_CHARAC_
+			/** Set GPIO SHA high */
+			metal_gpio_set_pin(p_ctx->gpio0, C_GPIO0_SHA, 1);
+#endif /* _WITH_GPIO_CHARAC_ */
 			err = scl_sha_core((metal_scl_t*)p_ctx->p_metal_sifive_scl,
 								(scl_sha_ctx_t*)p_ctx->p_scl_hash_ctx,
 								(const uint8_t*)p_tmp,
 								tmp_size);
+#ifdef _WITH_GPIO_CHARAC_
+			/** Set GPIO SHA low */
+			metal_gpio_set_pin(p_ctx->gpio0, C_GPIO0_SHA, 0);
+#endif /* _WITH_GPIO_CHARAC_ */
 			if( SCL_OK != err )
 			{
 				/** Should not happen */
@@ -564,10 +591,18 @@ int_pltfrm slbv_check_slb(t_context *p_ctx, e_slbv_slb_id slb_id)
 			/** Then finish computation */
 			hash_len = sizeof(p_ctx->digest);
 			memset((void*)p_ctx->digest, 0x00, SHA384_BYTE_HASHSIZE);
+#ifdef _WITH_GPIO_CHARAC_
+			/** Set GPIO SHA high */
+			metal_gpio_set_pin(p_ctx->gpio0, C_GPIO0_SHA, 1);
+#endif /* _WITH_GPIO_CHARAC_ */
 			err = scl_sha_finish((metal_scl_t*)p_ctx->p_metal_sifive_scl,
 									(scl_sha_ctx_t*)p_ctx->p_scl_hash_ctx,
 									p_ctx->digest,
 									&hash_len);
+#ifdef _WITH_GPIO_CHARAC_
+			/** Set GPIO SHA low */
+			metal_gpio_set_pin(p_ctx->gpio0, C_GPIO0_SHA, 0);
+#endif /* _WITH_GPIO_CHARAC_ */
 			if( SCL_OK != err )
 			{
 				/** Critical error */
@@ -580,12 +615,22 @@ int_pltfrm slbv_check_slb(t_context *p_ctx, e_slbv_slb_id slb_id)
 			signature.r = (uint8_t*)( slbv_context.p_hdr->signature + ( i * C_SIGNATURE_MAX_SIZE ) );
 			signature.s = signature.r + C_EDCSA384_SIZE;
 			/** Check certificate */
+#ifdef _WITH_GPIO_CHARAC_
+			/** Set GPIO check ECDSA high */
+			metal_gpio_set_pin(p_ctx->gpio0, C_GPIO0_SHA_ECDSA, 1);
+#endif /* _WITH_GPIO_CHARAC_ */
 			err = scl_ecdsa_verification((metal_scl_t*)p_ctx->p_metal_sifive_scl,
 											&ecc_secp384r1,
 											(const ecc_affine_const_point_t *const)&Q,
 											(const ecdsa_signature_const_t *const)&signature,
 											p_ctx->digest,
 											SHA384_BYTE_HASHSIZE);
+#ifdef _WITH_GPIO_CHARAC_
+			/** Set GPIO check ECDSA low */
+			metal_gpio_set_pin(p_ctx->gpio0, C_GPIO0_SHA_ECDSA, 0);
+			/** Green LED Off */
+			metal_led_off(p_ctx->led[1]);
+#endif /* _WITH_GPIO_CHARAC_ */
 			if( SCL_OK != err )
 			{
 				/** SLB is not granted to be executed on this platform */
