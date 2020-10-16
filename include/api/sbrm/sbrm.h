@@ -63,6 +63,7 @@ typedef enum
 	N_SBRM_ERR_ECDSA_TEST_FAILURE,
 	N_SBRM_ERR_CPU_NOT_FOUND,
 	N_SBRM_ERR_CPU_IRQ_NOT_FOUND,
+	N_SBRM_ERR_PLIC_NOT_FOUND,
 	N_SBRM_ERR_,
 	N_SBRM_ERR_MAX = N_SBRM_ERR_,
 	N_SBRM_ERR_COUNT
@@ -96,9 +97,10 @@ typedef struct
 	uint32_t									crc_ref_table[C_SBRM_CRC_TABLE_SIZE_INT];
 	/** Pointer on CPU context structure */
 	struct metal_cpu							*p_cpu;
-	/** Pointer on interruption function pointer array */
+	/** Pointer on CPU interruption function pointer array */
 	struct metal_interrupt						*p_cpu_intr;
-
+	/** Pointer on PLIC or CLIC function pointer array */
+	struct metal_interrupt						*p_pclic;
 } t_sbrm_context;
 
 /** Functions *****************************************************************/
