@@ -84,7 +84,7 @@ int_pltfrm sbrm_init(void *p_ctx, void *p_in, uint32_t length_in)
 		/** First zero-ize local context */
 		memset((void*)&sbrm_context, 0x00, sizeof(t_sbrm_context));
 	    /** Lets get the CPU and and its interrupt */
-	    sbrm_context.p_cpu = metal_cpu_get(0);
+	    sbrm_context.p_cpu = metal_cpu_get(metal_cpu_get_current_hartid());
 	    if( NULL == sbrm_context.p_cpu )
 	    {
 	        /**  */
@@ -101,10 +101,22 @@ int_pltfrm sbrm_init(void *p_ctx, void *p_in, uint32_t length_in)
 	    }
 	    /** Initialize interruption */
 	    metal_interrupt_init(sbrm_context.p_cpu_intr);
-	    /** Retrieve power mode */
-
-		/** Fill out parameters */
-
+#if defined (METAL_RISCV_PLIC0)
+	    /** Check if this target has a plic */
+	    sbrm_context.p_pclic = metal_interrupt_get_controller(METAL_PLIC_CONTROLLER, 0);
+#elif defined (METAL_SIFIVE_CLIC0)
+	    /** Check we this target has a plic */
+	    sbrm_context.p_pclic = metal_interrupt_get_controller(METAL_CLIC_CONTROLLER, 0);
+#else
+#error Either PLIC, either CLIC must be defined !!!!
+#endif /* METAL_SIFIVE_CLIC0 */
+		if( !sbrm_context.p_pclic )
+		{
+			err = N_SBRM_ERR_PLIC_NOT_FOUND;
+			goto sbrm_init_out;
+		}
+		/** Initialize CLINT/CLIC */
+		metal_interrupt_init(sbrm_context.p_pclic);
 	    /** Initialize CRC32 reference array */
 	    /** Zero-ize array */
 		memset((void*)sbrm_context.crc_ref_table, 0x00, sizeof(sbrm_context.crc_ref_table));

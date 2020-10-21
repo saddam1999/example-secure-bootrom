@@ -101,8 +101,8 @@ int_pltfrm sp_init(void *p_ctx, void *p_in, uint32_t length_in)
 		p_context->p_sp_context = (volatile void*)&sp_context;
 		/** Initialization of communication structure */
 		/** Initialization of port structure */
-		sp_context.port.uart.reg_uart = (volatile t_reg_uart*)METAL_SIFIVE_UART0_0_BASE_ADDRESS;
-		sp_context.port.uart.uart0 = (struct metal_uart *)__METAL_DT_STDOUT_UART_HANDLE;
+		sp_context.port.uart.uart0 = (struct metal_uart *)metal_uart_get_device(C_SP_SUP_BUS_UART_ID);
+		sp_context.port.uart.reg_uart = (volatile t_reg_uart*)__metal_driver_sifive_uart0_control_base(sp_context.port.uart.uart0);
 		/** Set up interruption for UART0 */
 		sp_context.port.uart.uart0_ic = metal_uart_interrupt_controller(sp_context.port.uart.uart0);
 	    if( NULL == sp_context.port.uart.uart0_ic )
@@ -123,19 +123,19 @@ int_pltfrm sp_init(void *p_ctx, void *p_in, uint32_t length_in)
 			{
 				/** Be sure to disable UART interruptions first */
 				sp_context.port.uart.reg_uart->ie = 0;
-			    /**  */
+			    /** Enable RX interruption in UART */
 			    err = metal_uart_receive_interrupt_enable(sp_context.port.uart.uart0);
 			    if( err )
 			    {
 			        goto sp_init_out;
 			    }
-			    /**  */
+			    /** Enable UART interruption */
 			    err = metal_interrupt_enable(sp_context.port.uart.uart0_ic, sp_context.port.uart.uart0_irq);
 			    if( err )
 			    {
 			        goto sp_init_out;
 			    }
-			    /** Lastly CPU interrupt */
+			    /** ... Lastly CPU interrupt */
 			    err = metal_interrupt_enable(p_sbrm_ctx->p_cpu_intr, 0);
 			}
 	    }
