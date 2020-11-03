@@ -313,8 +313,13 @@ typedef struct __attribute__((packed))
 	uint8_t										lcp;
 	/** JTAG state */
 	uint8_t										jtag;
+#ifdef _WITH_DOUBLE_RMA_MODE_
 	/** RMA mode */
 	uint16_t									rma_mode;
+#else
+	/** RMA mode */
+	uint8_t										rma_mode;
+#endif /* _WITH_DOUBLE_RMA_MODE_ */
 	/** CSK last free slot in storage */
 	uint8_t										csk_slot;
 	/** Applet RAM start address */

@@ -1384,8 +1384,9 @@ int_pltfrm sp_treat_getinfo(t_context *p_ctx, uint8_t** p_data, uint32_t *p_leng
 		}
 		else
 		{
-			p_tmp->rma_mode = 0x000000ef;
+			p_tmp->rma_mode = 0;
 		}
+#ifdef _WITH_DOUBLE_RMA_MODE_
 		err = sbrm_read_otp(p_ctx, C_OTP_RMA_PMU_OFST, (uint8_t*)&tmp, C_OTP_RMA_PMU_SIZE);
 		if( NO_ERROR == err )
 		{
@@ -1393,8 +1394,9 @@ int_pltfrm sp_treat_getinfo(t_context *p_ctx, uint8_t** p_data, uint32_t *p_leng
 		}
 		else
 		{
-			p_tmp->rma_mode |= 0x0000be00;
+			p_tmp->rma_mode |= 0xbe00;
 		}
+#endif /* _WITH_DOUBLE_RMA_MODE_ */
 		/** Retrieve Applet memory area */
 		p_tmp->applet_start = (uint_pltfrm)&__sbrm_free_start_addr;
 		p_tmp->applet_end = (uint_pltfrm)&__sbrm_free_end_addr;
